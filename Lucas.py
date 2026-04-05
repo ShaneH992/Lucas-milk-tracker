@@ -6,7 +6,7 @@ from st_supabase_connection import SupabaseConnection
 import altair as alt
 
 # --- 页面配置 ---
-st.set_page_config(page_title="宝宝日常记录仪", layout="centered")
+st.set_page_config(page_title="Lucas的日常记录仪", layout="centered")
 
 query_param = st.query_params
 auto_login_token = query_param.get("token")
