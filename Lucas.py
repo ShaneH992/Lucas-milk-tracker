@@ -8,10 +8,11 @@ import altair as alt
 # --- 页面配置 ---
 st.set_page_config(page_title="Lucas的日常记录仪", layout="centered")
 
-query_param = st.query_params
-auto_login_token = query_param.get("token")
+#query_param = st.query_params
+#auto_login_token = query_param.get("token")
 
 # --- 1. 用户认证 ---
+'''
 if auto_login_token == "momlovesyou":
     authentication_status = True
     name = "妈妈"
@@ -21,12 +22,13 @@ elif auto_login_token == "dadlovesyou":
     name = "爸爸"
     username = "dad"
 else:
-    authenticator = stauth.Authenticate(
-        st.secrets['credentials'].to_dict(),
-        "baby_tracker_app",
-        st.secrets['cookie']['key'],
-        cookie_expiry_days=30
-    )
+'''
+authenticator = stauth.Authenticate(
+    st.secrets['credentials'].to_dict(),
+    "baby_tracker_app",
+    st.secrets['cookie']['key'],
+    cookie_expiry_days=30
+)
 
 authenticator.login(location="main")
 
