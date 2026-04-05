@@ -43,7 +43,7 @@ if st.session_state["authentication_status"]:
         except Exception as e:
             st.error(f"保存失败: {e}")
 
-    st.title(f"🍼 {name}，来记录岁岁的成长吧")
+    st.title(f"欢迎{name}，来记录岁岁的成长吧")
 
     # --- 第一部分：表单统一记录 ---
     # 使用 clear_on_submit=True 提交后会自动重置表单内容
@@ -153,15 +153,13 @@ if st.session_state["authentication_status"]:
                 )
         else:
             st.info("尚未发现记录数据")
+    st.write("")
+    st.divider()
+    col_left, col_mid, col_right = st.columns([2, 1, 2])
+    with col_mid:
+        authenticator.logout(button_name='退出登录', location='main')
 
 elif st.session_state["authentication_status"] is False:
     st.error('用户名或密码错误')
 elif st.session_state["authentication_status"] is None:
     st.info('请先登录以开始记录')
-
-# --- 退出登录 ---
-st.write("")
-st.divider()
-col_left, col_mid, col_right = st.columns([2, 1, 2])
-with col_mid:
-    authenticator.logout(button_name='退出登录', location='main')
