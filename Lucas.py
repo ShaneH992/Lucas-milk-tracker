@@ -4,6 +4,7 @@ import datetime
 import streamlit_authenticator as stauth
 from st_supabase_connection import SupabaseConnection
 import altair as alt
+import pytz
 
 # --- 页面配置 ---
 st.set_page_config(page_title="Lucas的日常记录仪", layout="centered")
@@ -12,7 +13,6 @@ query_param = st.query_params
 auto_login_token = query_param.get("token")
 
 # --- 1. 用户认证 ---
-
 if auto_login_token == "momlovesyou":
     authentication_status = True
     name = "妈妈"
@@ -41,6 +41,10 @@ if st.session_state["authentication_status"]:
 
     # 统一上传数据的函数
     def save_all_to_supabase(milk, pee, poo, excercise, extra):
+
+        la_tz = pytz.timezone('America/Los_Angeles')
+        la_now = datetime.datetime.now(la_tz).isoformat()
+
         data = {
             "powder_milk(ml)": int(milk),
             "pee": "✅" if pee else None,
@@ -48,7 +52,7 @@ if st.session_state["authentication_status"]:
             "excercise": excercise if excercise else None,
             "extra": extra if extra else None,
             "user_name": name,
-            "created_at": datetime.datetime.now().isoformat()
+            "created_at": la_now
         }
         try:
             conn.table("Lucas_milk_logs").insert(data).execute()
@@ -66,9 +70,11 @@ if st.session_state["authentication_status"]:
         st.subheader("🥛 奶量记录")
         milk_140, milk_200, custom_milk = st.columns(3)
         with milk_140:
-            milk_val = st.checkbox("🥛 140 ML", value=False)
+            if st.checkbox("🥛 140 ML", value=False):
+                milk_val = 140
         with milk_200:
-            milk_val = st.checkbox("🥛 200 ML", value=False)
+            if st.checkbox("🥛 200 ML", value=False):
+                milk_val = 200
         with custom_milk:
             with st.popover("自定义 (ml)", use_container_width=True):
                 custom_val = st.number_input("自定义 (ml)", value=None, step=10, label_visibility="collapsed")
@@ -119,7 +125,14 @@ if st.session_state["authentication_status"]:
             # 数据预处理
             df.columns = [c.strip() for c in df.columns]
             df['created_at'] = pd.to_datetime(df['created_at'])
+
+            try:
+                df["created_at"] = df["created_at"].dt.tz_convert('America/Los_Angeles')
+            except TypeError:
+                df["created_at"] = df["created_at"].dt.tz_localize('UTC').dt.tz_convert('America/Los_Angeles')
             
+            df['created_at'] = df['created_at'].dt.tz_localize(None)
+
             # --- 奶量图表优化 ---
             milk_col = 'powder_milk(ml)'
             df[milk_col] = pd.to_numeric(df[milk_col], errors='coerce').fillna(0)
