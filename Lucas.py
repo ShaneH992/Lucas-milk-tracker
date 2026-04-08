@@ -12,16 +12,19 @@ st.set_page_config(page_title="Lucas的日常记录仪", layout="centered")
 query_param = st.query_params
 auto_login_token = query_param.get("token")
 
+authentication_status = None
+
 # --- 1. 用户认证 ---
 if auto_login_token == "momlovesyou":
-    authentication_status = True
-    name = "妈妈"
-    username = "mom"
+    st.session_state["authentication_status"] = True
+    st.session_state["name"] = "妈妈"
+    st.session_state["username"] = "mom"
 elif auto_login_token == "dadlovesyou":
-    authentication_status = True
-    name = "爸爸"
-    username = "dad"
-else:
+    st.session_state["authentication_status"] = True
+    st.session_state["name"] = "爸爸"
+    st.session_state["username"] = "dad"
+
+if st.session_state.get("authentication_status") is not True:
     authenticator = stauth.Authenticate(
         st.secrets['credentials'].to_dict(),
         "baby_tracker_app",
@@ -29,7 +32,7 @@ else:
         cookie_expiry_days=30
     )
 
-authenticator.login(location="main")
+    authenticator.login(location="main")
 
 # --- 2. 核心逻辑 (登录成功后执行) ---
 if st.session_state["authentication_status"]:
