@@ -9,6 +9,13 @@ import pytz
 # --- 页面配置 ---
 st.set_page_config(page_title="Lucas的日常记录仪", layout="centered")
 
+authenticator = stauth.Authenticate(
+        st.secrets['credentials'].to_dict(),
+        "baby_tracker_app",
+        st.secrets['cookie']['key'],
+        cookie_expiry_days=30
+    )
+
 query_param = st.query_params
 auto_login_token = query_param.get("token")
 
@@ -24,14 +31,7 @@ elif auto_login_token == "dadlovesyou":
     st.session_state["name"] = "爸爸"
     st.session_state["username"] = "dad"
 
-if st.session_state.get("authentication_status") is not True:
-    authenticator = stauth.Authenticate(
-        st.secrets['credentials'].to_dict(),
-        "baby_tracker_app",
-        st.secrets['cookie']['key'],
-        cookie_expiry_days=30
-    )
-
+if st.session_state.get("authentication_status") is not True:    
     authenticator.login(location="main")
 
 # --- 2. 核心逻辑 (登录成功后执行) ---
@@ -43,19 +43,16 @@ if st.session_state["authentication_status"]:
     conn = st.connection("supabase", type=SupabaseConnection)
 
     # 统一上传数据的函数
-    def save_all_to_supabase(milk, pee, poo, excercise, extra):
-
-        la_tz = pytz.timezone('America/Los_Angeles')
-        la_now = datetime.datetime.now(la_tz).isoformat()
+    def save_all_to_supabase(milk, pee, poo, excercise, extra, timestamp):
 
         data = {
-            "powder_milk(ml)": int(milk),
+            "powder_milk(ml)": int(milk) if milk else 0,
             "pee": "✅" if pee else None,
             "poo": "✅" if poo else None,
             "excercise": excercise if excercise else None,
             "extra": extra if extra else None,
             "user_name": name,
-            "created_at": la_now
+            "created_at": timestamp
         }
         try:
             conn.table("Lucas_milk_logs").insert(data).execute()
@@ -99,13 +96,29 @@ if st.session_state["authentication_status"]:
         ex_val = st.text_input("🏃 运动内容", placeholder="例如：做操、抬头训练")
         ext_val = st.text_input("☀️ 其他备注", placeholder="例如：维他命D、鱼肝油")
         
+        with st.popover("自定义时间", use_container_width=True):
+
+            mt_col1, mt_col2 = st.columns(2)
+            with mt_col1:
+                manual_date = st.date_input("选择日期", value=datetime.datetime.now(pytz.timezone('America/Los_Angeles')))
+            with mt_col2:
+                manual_time = st.time_input("选择时间", value=datetime.datetime.now(pytz.timezone('America/Los_Angeles')).time())
+            
+            is_manual_time = st.checkbox("确认手动时间", value=False)
+            if is_manual_time:
+                la_tz = pytz.timezone('America/Los_Angeles')
+                dt_combine = datetime.datetime.combine(manual_date, manual_time)
+                final_time = la_tz.localize(dt_combine).isoformat()
+            else:
+                final_time = datetime.datetime.now(pytz.timezone('America/Los_Angeles')).isoformat()
+
         # 提交按钮
         submitted = st.form_submit_button("✅ 确认上传记录", use_container_width=True)
         
         if submitted:
             # 只有至少有一项内容时才上传（防止误点空提交）
             if milk_val > 0 or is_pee or is_poo or ex_val or ext_val:
-                save_all_to_supabase(milk_val, is_pee, is_poo, ex_val, ext_val)
+                save_all_to_supabase(milk_val, is_pee, is_poo, ex_val, ext_val, final_time)
             else:
                 st.warning("请至少填写一项内容再提交哦！")
 
