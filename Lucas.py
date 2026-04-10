@@ -62,6 +62,8 @@ if st.session_state["authentication_status"]:
 
     st.title(f"欢迎{name}，来记录岁岁的成长吧")
 
+    if "init_time" not in st.session_state:
+        st.session_state.init_time = datetime.datetime.now(pytz.timezone("America/Los_Angeles"))
     # --- 第一部分：表单统一记录 ---
     # 使用 clear_on_submit=True 提交后会自动重置表单内容
     with st.form("baby_event_form", clear_on_submit=True):
@@ -96,26 +98,30 @@ if st.session_state["authentication_status"]:
         ex_val = st.text_input("🏃 运动内容", placeholder="例如：做操、抬头训练")
         ext_val = st.text_input("☀️ 其他备注", placeholder="例如：维他命D、鱼肝油")
         
-        with st.popover("自定义时间", use_container_width=True):
+        # with st.popover("自定义时间", use_container_width=True):
 
-            mt_col1, mt_col2 = st.columns(2)
-            with mt_col1:
-                manual_date = st.date_input("选择日期", value=datetime.datetime.now(pytz.timezone('America/Los_Angeles')))
-            with mt_col2:
-                manual_time = st.time_input("选择时间", value=datetime.datetime.now(pytz.timezone('America/Los_Angeles')).time())
-            
-            is_manual_time = st.checkbox("确认手动时间", value=False)
-            if is_manual_time:
-                la_tz = pytz.timezone('America/Los_Angeles')
-                dt_combine = datetime.datetime.combine(manual_date, manual_time)
-                final_time = la_tz.localize(dt_combine).isoformat()
-            else:
-                final_time = datetime.datetime.now(pytz.timezone('America/Los_Angeles')).isoformat()
+        mt_col1, mt_col2 = st.columns(2)
+        with mt_col1:
+            manual_date = st.date_input("选择日期", value=st.session_state.init_time)
+        with mt_col2:
+            manual_time = st.time_input("选择时间", value=st.session_state.init_time.time())
+        
+        is_manual_time = st.checkbox("确认手动时间", value=False)
 
         # 提交按钮
         submitted = st.form_submit_button("✅ 确认上传记录", use_container_width=True)
         
         if submitted:
+            la_tz = pytz.timezone('America/Los_Angeles')
+            if is_manual_time:
+                dt_combine = datetime.datetime.combine(manual_date, manual_time)
+                final_time = la_tz.localize(dt_combine).isoformat()
+                st.write(manual_time)
+                st.write(dt_combine)
+                st.write(final_time)
+            else:
+                final_time = datetime.datetime.now(pytz.timezone('America/Los_Angeles')).isoformat()
+
             # 只有至少有一项内容时才上传（防止误点空提交）
             if milk_val > 0 or is_pee or is_poo or ex_val or ext_val:
                 save_all_to_supabase(milk_val, is_pee, is_poo, ex_val, ext_val, final_time)
@@ -140,7 +146,7 @@ if st.session_state["authentication_status"]:
         if not df.empty:
             # 数据预处理
             df.columns = [c.strip() for c in df.columns]
-            df['created_at'] = pd.to_datetime(df['created_at'])
+            df['created_at'] = pd.to_datetime(df['created_at'], format='ISO8601')
 
             try:
                 df["created_at"] = df["created_at"].dt.tz_convert('America/Los_Angeles')
