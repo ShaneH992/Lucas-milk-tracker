@@ -30,6 +30,11 @@ elif auto_login_token == "dadlovesyou":
     st.session_state["authentication_status"] = True
     st.session_state["name"] = "爸爸"
     st.session_state["username"] = "dad"
+elif auto_login_token == "gmomlovesyou":
+    st.session_state["authentication_status"] = True
+    st.session_state["name"] = "奶奶"
+    st.session_state["username"] = "gmom"
+
 
 if st.session_state.get("authentication_status") is not True:    
     authenticator.login(location="main")
@@ -141,8 +146,9 @@ if st.session_state["authentication_status"]:
             st.error(f"获取数据失败：{e}")
             return pd.DataFrame()
 
+    df = get_data()
     if st.checkbox("开启统计视图"):
-        df = get_data()
+        
         if not df.empty:
             # 数据预处理
             df.columns = [c.strip() for c in df.columns]
